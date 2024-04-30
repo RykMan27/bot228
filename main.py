@@ -15,14 +15,13 @@ logging.basicConfig(
 logging.getLogger().setLevel('DEBUG')
 
 TOKEN_FILE = 'token.txt'
-TOKEN = Path(TOKEN_FILE).read_text().strip()
+TOKEN = '6642269944:AAENOzJn7nVXSsh2zNC9CQdg0-jHDRefkn8'
 AUTHORIZED_USERS = ['makukha']
 
 DURATION = 5
 
 
 class Question:
-
     def __init__(self, qid, question, answers):
         self.qid = qid
         self.text = question
@@ -40,36 +39,30 @@ class Question:
                 raise ValueError(
                     f'Неправильные ответы в вопросе {qid}: {answers}')
 
+
 QUESTIONS = {q['id']: Question(q['id'], q['q'], q['a'])
     for q in yaml.load(Path('questions.yaml').read_text())}
 
 
 def start(update, context):
-
     msg = update.message
     user = msg.from_user
     debug(f'Бот-викторина, введенный пользователем: {user.id} @{user.username} "{user.first_name} {user.last_name}"')
-
     if AUTHORIZED_USERS and user.username not in AUTHORIZED_USERS:
         return
-
     if 'username' not in context.user_data:
         context.user_data['username'] = user.username
-
     msg.bot.send_message(msg.chat_id,
         text=f'Давайте начнем тест. У вас будет {DURATION} минут на {len(QUESTIONS)} вопросов. Готовы?',
         reply_markup=telegram.ReplyKeyboardMarkup([['Начать тест']]))
 
 
 def common_message(update, context):
-
     msg = update.message
     user = msg.from_user
     debug(f'Сообщение, полученное от {user.id} @{user.username}: {msg.text}')
-
     if AUTHORIZED_USERS and user.username not in AUTHORIZED_USERS:
          return
-
     if 'quiz' not in context.user_data:
 
         info(f'Викторина, начатая {user.id} @{user.username}')
@@ -82,15 +75,9 @@ def common_message(update, context):
         msg.bot.send_message(msg.chat_id,
             text=f'Тест начат в {starttime}',
             reply_markup=telegram.ReplyKeyboardRemove())
-
     else:
-        # save response
         context.user_data['quiz']['answers'][context.user_data['quiz']['current_qid']] = msg.text
-
-    # ask the question
-
     questions_left = set(QUESTIONS) - set(context.user_data['quiz']['answers'])
-
     if len(questions_left) > 0:
 
         question = QUESTIONS[random.sample(questions_left, 1)[0]]
@@ -101,7 +88,6 @@ def common_message(update, context):
             reply_markup=telegram.ReplyKeyboardMarkup([[aid for aid in sorted(question.answers)]]))
 
         context.user_data['quiz']['current_qid'] = question.qid
-
     else:
         msg.bot.send_message(msg.chat_id,
             text=f'Тест пройден!',
